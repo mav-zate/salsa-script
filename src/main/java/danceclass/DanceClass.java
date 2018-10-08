@@ -5,12 +5,10 @@ public class DanceClass {
     private String level;
     private String instructorName;
     private Integer weekNumber;
+    private ClassTime startTime;
+    private ClassTime endTime;
 
-    DanceClass(String className, String level, String instructorName, Integer weekNumber) {
-        this.className = className;
-        this.level = level;
-        this.instructorName = instructorName;
-        this.weekNumber = weekNumber;
+    DanceClass() {
     }
 
     public String getClassName() {
@@ -43,5 +41,34 @@ public class DanceClass {
 
     public void setWeekNumber(Integer weekNumber) {
         this.weekNumber = weekNumber;
+    }
+
+    public ClassTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(ClassTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public ClassTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(ClassTime endTime) {
+        this.endTime = endTime;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(DanceClassUtil.CLASS_NAME).append(": ").append(className).append("\n")
+                .append(level).append("\n")
+                .append(DanceClassUtil.CLASS_INSTRUCTOR).append(": ").append(instructorName).append("\n")
+                .append(startTime).append(" - ").append(endTime).append("\n");
+//                .append(DanceClassUtil.CLASS_DATE_RANGE).append(": ").append(weekNumber).append("\n");
+
+        return sb.toString();
     }
 }
