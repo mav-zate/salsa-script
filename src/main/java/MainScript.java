@@ -3,12 +3,15 @@ import com.gargoylesoftware.htmlunit.html.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import danceDay.DanceDay;
-import danceclass.DanceClass;
-import danceclass.DanceClassUtil;
+import danceclass.*;
+import org.apache.commons.lang3.ClassUtils;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 
 
 public class MainScript {
@@ -32,9 +35,11 @@ public class MainScript {
             for (int day = 0; day < 7; day++) {
                 DanceDay danceDay = new DanceDay(daysOfWeek[day]);
 
+
                 HtmlTable classScheduleTable = classSchedulePage.getHtmlElementById("scrollingtable");
                 List<HtmlTableBody> bodies = classScheduleTable.getBodies();
                 HtmlTableBody tableBody = bodies.get(0);
+                List<ClassTime> classStartTimes = getClassStartTimes(tableBody);
                 for (HtmlTableRow row : tableBody.getRows()) {
                     // check if row is class row or not
                     HtmlTableCell firstTableCell = row.getCell(0);
@@ -47,7 +52,7 @@ public class MainScript {
                     if (colSpanInt < 1 || colSpanInt > 5) {
                         continue;
                     }
-                    List<DanceClass> danceClasses = getDanceClassesFromRow(row, requestedClassName, requestedClassLevel);
+                    List<DanceClass> danceClasses = getDanceClassesFromRow(row, requestedClassName, requestedClassLevel, classStartTimes);
                     danceDay.addClasses(danceClasses);
                 }
 
@@ -78,10 +83,28 @@ public class MainScript {
         }
     }
 
-    public static List<DanceClass> getDanceClassesFromRow(HtmlTableRow row, String requestedClassName, String requestedClassLevel) {
+    public static List<DanceClass> getDanceClassesFromRow(HtmlTableRow row, String requestedClassName, String requestedClassLevel, List<ClassTime> classStartTimes) {
         List<DanceClass> danceClasses = Lists.newArrayList();
+        Integer totalColSpan = 0;
 
         for (HtmlTableCell rowCell : row.getCells()) {
+            String colSpan = rowCell.getAttribute("colspan");
+            Integer colSpanVal;
+            if (colSpan.isEmpty()) {
+                System.out.println("Cell is corrupt...colSpan attribute is non-existent or null");
+                return null;
+            }
+            colSpanVal = Integer.parseInt(colSpan);
+
+            ClassTime startTime = classStartTimes.get(totalColSpan);
+            ClassTime endTime;
+            try {
+                endTime = ClassTimeUtil.getClassEndTime(startTime, colSpanVal);
+            } catch (AbnormalClassLength e) {
+                continue; // TODO: ensure continue skips for iteration, out of catch block
+            }
+            totalColSpan += colSpanVal;
+
             Iterator<DomNode> cellData = rowCell.getChildren().iterator();
 
             List<String> dataPoints = extractClassDataFromCellData(cellData);
@@ -89,7 +112,9 @@ public class MainScript {
                 continue;
             }
 
-            Map<String, String> classDataMap = convertListToClassMap(dataPoints);
+            Map<String, Object> classDataMap = convertListToClassMap(dataPoints);
+            classDataMap.put(DanceClassUtil.CLASS_START_TIME, startTime);
+            classDataMap.put(DanceClassUtil.CLASS_END_TIME, endTime);
 
             // TODO: add method that converts className to requested format or vice versa
             // TODO: add method that converts classLevel "" ""
@@ -105,8 +130,8 @@ public class MainScript {
         return danceClasses;
     }
 
-    public static Map<String, String> convertListToClassMap(List<String> dataList) {
-        Map<String, String> classDataMap = Maps.newHashMap();
+    public static Map<String, Object> convertListToClassMap(List<String> dataList) {
+        Map<String, Object> classDataMap = Maps.newHashMap();
 
         String name = dataList.get(0);
         classDataMap.put(DanceClassUtil.CLASS_NAME, name);
@@ -149,5 +174,53 @@ public class MainScript {
         }
 
         System.out.println("\nNow go ahead and dance! :)");
+    }
+
+    public static List<ClassTime> getClassStartTimes(HtmlTableBody tableBody) {
+        List<ClassTime> classStartTimes = Lists.newArrayList();
+
+        for (HtmlTableRow row : tableBody.getRows()) {
+            List<HtmlTableCell> tableCells = row.getCells();
+            Boolean isTimeRow = tableCells
+                    .stream()
+                    .anyMatch((cell) -> {
+                        String className = cell.getAttribute("class");
+                        return (className.equals("time_td_tri") || className.equals("time_td"));
+                    });
+
+            if (isTimeRow) {
+                classStartTimes.addAll(extractClassTimesFromRow(row));
+            }
+        }
+
+        return classStartTimes;
+    }
+
+    public static List<ClassTime> extractClassTimesFromRow(HtmlTableRow row) {
+        List<ClassTime> classTimes = Lists.newArrayList();
+
+        for (HtmlTableCell cell : row.getCells()) {
+            classTimes.add(classTimeFromCell(cell));
+        }
+
+        // add school closing time
+        ClassTime schoolCloseTime = classTimes.get(classTimes.size() - 1);
+
+        return classTimes;
+    }
+
+    public static ClassTime classTimeFromCell(HtmlTableCell cell) {
+        String classStartTime = cell.getTextContent();
+
+        Pattern p = Pattern.compile("[a-zA-Z]+");
+        Matcher m = p.matcher(classStartTime);
+        if (m.find()) {
+            int idx = m.start();
+            classStartTime = classStartTime.substring(0, idx);
+        }
+        String[] timeUnits = classStartTime.split(":");
+        ClassTime classTime = new ClassTime(Integer.parseInt(timeUnits[0]), Integer.parseInt(timeUnits[1]));
+
+        return classTime;
     }
 }
