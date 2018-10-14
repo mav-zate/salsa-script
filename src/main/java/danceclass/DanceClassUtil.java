@@ -1,6 +1,9 @@
 package danceclass;
 
+import java.time.LocalDate;
 import java.util.Map;
+
+import static java.time.temporal.ChronoUnit.WEEKS;
 
 public class DanceClassUtil {
     public static final String CLASS_NAME = "name";
@@ -23,9 +26,25 @@ public class DanceClassUtil {
         return danceClass;
     }
 
-    // TODO: write this method
     public static Integer translateDateRangeToWeekNumber(String dateRange) {
-        return 1;
+      String[] startEndDate = dateRange.split("-");
+      LocalDate startDate = convertDateStringToDate(startEndDate[0].trim());
+      LocalDate endDate = convertDateStringToDate(startEndDate[1].trim());
+      return getWeekNumber(startDate, endDate);
+    }
+
+    private static LocalDate convertDateStringToDate(String dateString) {
+      String[] monthAndDay = dateString.split(" ");
+      String month = monthAndDay[0].toUpperCase();
+      String day = monthAndDay[1];
+      MonthNumber monthNumber = MonthNumber.valueOf(month);
+      return LocalDate.of(LocalDate.now().getYear(),
+          monthNumber.getMonthNumber(),
+          Integer.parseInt(day));
+    }
+
+    private static int getWeekNumber(LocalDate startDate, LocalDate currentDate) {
+      return (int) WEEKS.between(startDate, currentDate) + 1;
     }
 
     public static ClassTime getClassEndTime(ClassTime classStartTime, Integer colSpanValue) throws

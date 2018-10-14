@@ -66,8 +66,8 @@ public class DanceClass {
         sb.append(DanceClassUtil.CLASS_NAME).append(": ").append(className).append("\n")
                 .append(level).append("\n")
                 .append(DanceClassUtil.CLASS_INSTRUCTOR).append(": ").append(instructorName).append("\n")
-                .append(startTime).append(" - ").append(endTime).append("\n");
-//                .append(DanceClassUtil.CLASS_DATE_RANGE).append(": ").append(weekNumber).append("\n");
+                .append(startTime).append(" - ").append(endTime).append("\n")
+                .append("Week Number").append(": ").append(weekNumber).append("\n");
 
         return sb.toString();
     }
