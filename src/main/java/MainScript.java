@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import danceDay.DanceDay;
 import danceclass.*;
-import org.apache.commons.lang3.ClassUtils;
 
 import java.util.Iterator;
 import java.util.List;
@@ -99,7 +98,7 @@ public class MainScript {
             ClassTime startTime = classStartTimes.get(totalColSpan);
             ClassTime endTime;
             try {
-                endTime = ClassTimeUtil.getClassEndTime(startTime, colSpanVal);
+                endTime = DanceClassUtil.getClassEndTime(startTime, colSpanVal);
             } catch (AbnormalClassLength e) {
                 continue; // TODO: ensure continue skips for iteration, out of catch block
             }
