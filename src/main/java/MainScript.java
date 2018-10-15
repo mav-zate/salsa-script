@@ -28,11 +28,29 @@ public class MainScript {
 
         try (final WebClient webclient = new WebClient()) {
             HtmlPage classSchedulePage = webclient.getPage("http://www.pielcaneladancers.com/classschedule");
-            String[] daysOfWeek = {"Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"};
 
             List<DanceDay> weeklySchedule = Lists.newArrayList();
             for (int day = 0; day < 7; day++) {
-                DanceDay danceDay = new DanceDay(daysOfWeek[day]);
+                HtmlDivision dateBoxesContainer = classSchedulePage.getHtmlElementById("dateUL");
+                Iterable<DomNode> dateBoxes = dateBoxesContainer.getChildren();
+                Iterator<DomNode> dateBoxIterator = dateBoxes.iterator();
+
+
+                // 3rd node is current day and 5th node is next day
+                DomNode box1 = dateBoxIterator.next(); // useless input tag
+                DomNode box2 = dateBoxIterator.next();
+                DomNode box3 = dateBoxIterator.next(); // current day
+                DomNode box4 = dateBoxIterator.next();
+                DomNode box5 = dateBoxIterator.next();
+
+                String dayString = box3.getTextContent().trim().replace("\n", " ").trim();
+                String[] dayParts = dayString.split(" ");
+                String dayName = dayParts[0];
+                String month = dayParts[1];
+                String date = dayParts[2];
+
+
+                DanceDay danceDay = new DanceDay(dayName);
 
 
                 HtmlTable classScheduleTable = classSchedulePage.getHtmlElementById("scrollingtable");
@@ -51,25 +69,11 @@ public class MainScript {
                     if (colSpanInt < 1 || colSpanInt > 5) {
                         continue;
                     }
-                    List<DanceClass> danceClasses = getDanceClassesFromRow(row, requestedClassName, requestedClassLevel, classStartTimes);
+                    List<DanceClass> danceClasses = getDanceClassesFromRow(row, requestedClassName, requestedClassLevel, classStartTimes, month + " " + date);
                     danceDay.addClasses(danceClasses);
                 }
 
                 weeklySchedule.add(danceDay);
-
-                // TODO: STEP 2: GET INFO FROM REST OF THE DAYS
-                // once done, click anchor tag to get next day
-                HtmlDivision dateBoxesContainer = classSchedulePage.getHtmlElementById("dateUL");
-                Iterable<DomNode> dateBoxes = dateBoxesContainer.getChildren();
-                Iterator<DomNode> dateBoxIterator = dateBoxes.iterator();
-
-
-                // 3rd node is current day and 5th node is next day
-                DomNode box1 = dateBoxIterator.next(); // useless input tag
-                DomNode box2 = dateBoxIterator.next(); // current day
-                DomNode box3 = dateBoxIterator.next(); // next day
-                DomNode box4 = dateBoxIterator.next();
-                DomNode box5 = dateBoxIterator.next();
 
                 if (box5 instanceof HtmlAnchor) {
                     classSchedulePage = ((HtmlAnchor) box5).click();
@@ -82,7 +86,9 @@ public class MainScript {
         }
     }
 
-    public static List<DanceClass> getDanceClassesFromRow(HtmlTableRow row, String requestedClassName, String requestedClassLevel, List<ClassTime> classStartTimes) {
+    public static List<DanceClass> getDanceClassesFromRow(HtmlTableRow row, String requestedClassName,
+                                                          String requestedClassLevel, List<ClassTime> classStartTimes,
+                                                          String currentDay) {
         List<DanceClass> danceClasses = Lists.newArrayList();
         Integer totalColSpan = 0;
 
@@ -114,6 +120,7 @@ public class MainScript {
             Map<String, Object> classDataMap = convertListToClassMap(dataPoints);
             classDataMap.put(DanceClassUtil.CLASS_START_TIME, startTime);
             classDataMap.put(DanceClassUtil.CLASS_END_TIME, endTime);
+            classDataMap.put(DanceClassUtil.CURRENT_DATE, currentDay);
 
             // TODO: add method that converts className to requested format or vice versa
             // TODO: add method that converts classLevel "" ""
@@ -142,9 +149,14 @@ public class MainScript {
         classDataMap.put(DanceClassUtil.CLASS_INSTRUCTOR, instructor);
 
         String dateRange = dataList.get(3);
-        classDataMap.put(DanceClassUtil.CLASS_DATE_RANGE, dateRange);
+        classDataMap.put(DanceClassUtil.CLASS_START_DATE, extractStartDate(dateRange));
 
         return classDataMap;
+    }
+
+    public static String extractStartDate(String dateRange) {
+        String[] parts = dateRange.split(" - ");
+        return parts[0].trim();
     }
 
     public static List<String> extractClassDataFromCellData(Iterator<DomNode> cellData) {
@@ -165,7 +177,7 @@ public class MainScript {
 
     public static void printMethod(List<DanceDay> days, String requestedClass, String requestedLevel) {
         System.out.println("Requested Class: " + requestedClass);
-        System.out.println("Requested Level: " + requestedLevel);
+        System.out.println("Requested Level: " + requestedLevel + "\n");
 
         for (DanceDay danceDay : days) {
             System.out.println("--------------------");

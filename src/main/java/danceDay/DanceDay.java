@@ -17,10 +17,10 @@ public class DanceDay {
     public String toString() {
         StringBuilder sb = new StringBuilder();
 
-        sb.append(day).append(":\n");
+        sb.append(day).append(":\n\n");
         if (danceClasses.size() > 0) {
             for (DanceClass danceClass : danceClasses) {
-                sb.append(danceClass);
+                sb.append(danceClass).append("\n");
             }
         } else {
             sb.append("NO CLASSES");

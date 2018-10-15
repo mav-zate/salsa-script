@@ -9,8 +9,9 @@ public class DanceClassUtil {
     public static final String CLASS_NAME = "name";
     public static final String CLASS_LEVEL = "level";
     public static final String CLASS_INSTRUCTOR = "instructor";
-    public static final String CLASS_DATE_RANGE = "dateRange";
     public static final String CLASS_START_TIME = "startTime";
+    public static final String CLASS_START_DATE = "startDate";
+  public static final String CURRENT_DATE = "currentDate";
     public static final String CLASS_END_TIME = "endTime";
 
     public static DanceClass generateDanceClass(Map<String, Object> dataMap) {
@@ -19,18 +20,20 @@ public class DanceClassUtil {
         danceClass.setClassName((String) dataMap.get(CLASS_NAME));
         danceClass.setLevel((String) dataMap.get(CLASS_LEVEL));
         danceClass.setInstructorName((String) dataMap.get(CLASS_INSTRUCTOR));
-        danceClass.setWeekNumber(translateDateRangeToWeekNumber((String) dataMap.get(CLASS_DATE_RANGE)));
+        danceClass.setWeekNumber(translateDateRangeToWeekNumber(dataMap));
         danceClass.setStartTime((ClassTime) dataMap.get(CLASS_START_TIME));
         danceClass.setEndTime((ClassTime) dataMap.get(CLASS_END_TIME));
 
         return danceClass;
     }
 
-    public static Integer translateDateRangeToWeekNumber(String dateRange) {
-      String[] startEndDate = dateRange.split("-");
-      LocalDate startDate = convertDateStringToDate(startEndDate[0].trim());
-      LocalDate endDate = convertDateStringToDate(startEndDate[1].trim());
-      return getWeekNumber(startDate, endDate);
+    public static Integer translateDateRangeToWeekNumber(Map<String, Object> dataMap) {
+      String startDate = (String) dataMap.get(CLASS_START_DATE);
+      LocalDate start = convertDateStringToDate(startDate.trim());
+
+      String currentDate = (String) dataMap.get(CURRENT_DATE);
+      LocalDate current = convertDateStringToDate(currentDate.trim());
+      return getWeekNumber(start, current);
     }
 
     private static LocalDate convertDateStringToDate(String dateString) {
